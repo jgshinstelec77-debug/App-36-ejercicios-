@@ -1,0 +1,9 @@
+{
+  "name": "Mi entrenamiento cardíaco",
+  "short_name": "Entrenamiento cardíaco",
+  "start_url": "./",
+  "display": "standalone",
+  "theme_color": "#17202a",
+  "background_color": "#f3f5f7",
+  "lang": "es"
+}

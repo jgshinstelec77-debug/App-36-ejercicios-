@@ -1,0 +1,1 @@
+Sube estos tres archivos a la raíz de tu repositorio GitHub Pages: index.html, manifest.json y sw.js. Los registros se guardan en el móvil mediante almacenamiento local.
