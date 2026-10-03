@@ -47,12 +47,218 @@ function render(){
  $('prescription').textContent=x.sets_reps+' por ejercicio';
  $('ex').innerHTML=x.exercises.map((e,i)=>'<div class="exercise"><b>'+(i+1)+'.</b> '+e+' <span class="small">· '+x.sets_reps+'</span></div>').join('');
  const r=JSON.parse(localStorage.getItem(key())||'{}');
- ['kg','ppm','rpe','feel','notes'].forEach(id=>$(id).value=r[id]||'');
- $('status').textContent=r.date?'Sesión guardada ✓':'';
+ ['kg','pplet n=0;
+
+const $=x=>document.getElementById(x);
+
+function workoutInfo(index){
+  const week=Math.floor(index/3)+1;
+  const day=["Lunes","Miércoles","Viernes"][index%3];
+  return {
+    week,
+    day,
+    workout:index+1
+  };
 }
-function save(){const r={date:new Date().toLocaleString()};['kg','ppm','rpe','feel','notes'].forEach(id=>r[id]=$(id).value);localStorage.setItem(key(),JSON.stringify(r));$('status').textContent='Sesión guardada ✓'}
-$('sel').onchange=e=>{n=+e.target.value;render()};$('week').onchange=e=>{n=(+e.target.value-1)*3;render()};
-$('save').onclick=save;$('prev').onclick=()=>{n=Math.max(0,n-1);render()};$('next').onclick=()=>{n=Math.min(35,n+1);render()};
-$('guided').onclick=()=>alert('Guiado: calentamiento 5–8 min → 6 ejercicios → cardio según tu pauta médica → vuelta a la calma 5–8 min. 142 lpm es límite, no objetivo.');
-if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');render();
-</script></body></html>
+
+function storageKey(){
+  return "cardio-workout-"+n;
+}
+
+/* Selector de los 36 entrenamientos */
+$("sel").innerHTML="";
+for(let i=0;i<36;i++){
+  const info=workoutInfo(i);
+  $("sel").add(
+    new Option(
+      "Entrenamiento "+info.workout+" · "+info.day,
+      i
+    )
+  );
+}
+
+/* Selector de las 12 semanas */
+$("week").innerHTML="";
+for(let i=1;i<=12;i++){
+  $("week").add(
+    new Option("Semana "+i,i)
+  );
+}
+
+function render(){
+
+  const original=DATA[n];
+  const info=workoutInfo(n);
+
+  $("sel").value=n;
+  $("week").value=info.week;
+
+  $("title").textContent=
+    "Entrenamiento "+info.workout+
+    " · Semana "+info.week+
+    " · "+info.day;
+
+  $("phase").textContent=
+    info.week<=4
+      ?"Adaptación"
+      :info.week<=8
+        ?"Progresión"
+        :"Consolidación";
+
+  $("prescription").textContent=
+    original.sets_reps+" por ejercicio";
+
+  const saved=
+    JSON.parse(
+      localStorage.getItem(storageKey()) || "{}"
+    );
+
+  $("ex").innerHTML="";
+
+  original.exercises.forEach((exercise,i)=>{
+
+    const data=saved.exercises?.[i] || {};
+
+    const div=document.createElement("div");
+    div.className="exercise";
+
+    div.innerHTML=`
+      <div style="margin-bottom:8px">
+        <b>${i+1}. ${exercise}</b>
+        <span class="small"> · ${original.sets_reps}</span>
+      </div>
+
+      <div class="grid">
+
+        <label>
+          Kg
+          <input
+            class="exkg"
+            data-i="${i}"
+            inputmode="decimal"
+            value="${data.kg || ""}"
+            placeholder="Peso"
+          >
+        </label>
+
+        <label>
+          Repeticiones
+          <input
+            class="exreps"
+            data-i="${i}"
+            type="number"
+            inputmode="numeric"
+            value="${data.reps || ""}"
+            placeholder="Reps"
+          >
+        </label>
+
+      </div>
+
+      <label style="display:block;margin-top:8px">
+        Observaciones
+        <textarea
+          class="exnotes"
+          data-i="${i}"
+          rows="2"
+          placeholder="Cómo te ha resultado..."
+        >${data.notes || ""}</textarea>
+      </label>
+    `;
+
+    $("ex").appendChild(div);
+  });
+
+  $("kg").value=saved.kg || "";
+  $("ppm").value=saved.ppm || "";
+  $("rpe").value=saved.rpe || "";
+  $("feel").value=saved.feel || "";
+  $("notes").value=saved.notes || "";
+
+  $("status").textContent=
+    saved.date
+      ?"Sesión guardada ✓"
+      :"";
+}
+
+function save(){
+
+  const saved={
+    date:new Date().toLocaleString(),
+    kg:$("kg").value,
+    ppm:$("ppm").value,
+    rpe:$("rpe").value,
+    feel:$("feel").value,
+    notes:$("notes").value,
+    exercises:[]
+  };
+
+  document.querySelectorAll(".exkg").forEach(input=>{
+    const i=input.dataset.i;
+
+    if(!saved.exercises[i])
+      saved.exercises[i]={};
+
+    saved.exercises[i].kg=input.value;
+  });
+
+  document.querySelectorAll(".exreps").forEach(input=>{
+    const i=input.dataset.i;
+
+    if(!saved.exercises[i])
+      saved.exercises[i]={};
+
+    saved.exercises[i].reps=input.value;
+  });
+
+  document.querySelectorAll(".exnotes").forEach(input=>{
+    const i=input.dataset.i;
+
+    if(!saved.exercises[i])
+      saved.exercises[i]={};
+
+    saved.exercises[i].notes=input.value;
+  });
+
+  localStorage.setItem(
+    storageKey(),
+    JSON.stringify(saved)
+  );
+
+  $("status").textContent="Sesión guardada ✓";
+}
+
+$("sel").onchange=e=>{
+  n=Number(e.target.value);
+  render();
+};
+
+$("week").onchange=e=>{
+  const week=Number(e.target.value);
+  n=(week-1)*3;
+  render();
+};
+
+$("save").onclick=save;
+
+$("prev").onclick=()=>{
+  n=Math.max(0,n-1);
+  render();
+};
+
+$("next").onclick=()=>{
+  n=Math.min(35,n+1);
+  render();
+};
+
+$("guided").onclick=()=>{
+  alert(
+    "Guiado: calentamiento 5–8 min → 6 ejercicios → cardio según tu pauta médica → vuelta a la calma 5–8 min. 142 lpm es límite, no objetivo."
+  );
+};
+
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("./sw.js");
+}
+
+render();</script></body></html>
