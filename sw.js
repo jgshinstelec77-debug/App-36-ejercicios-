@@ -1,4 +1,4 @@
-const CACHE = 'cardio-36-v2';
+const CACHE = 'cardio-36-v3';
 
 const FILES = [
   './',
